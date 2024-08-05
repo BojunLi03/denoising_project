@@ -5,9 +5,9 @@ import cv2
 import numpy as np
 
 # Pytorch-implemented functions:
-# MSE (L2)
-# MAE (L1)
-# Huber (tested with reduction = 'mean', delta = 0.75)
+# MSE/L2 ( torch.nn.MSELoss() )
+# MAE/L1 ( torch.nn.L1Loss() )
+# Huber (tested with reduction = 'mean', delta = 0.75) ( torch.nn.HuberLoss(reduction='', delta=) )
 
 # TODO: make sure all the params are commented
     
