@@ -8,6 +8,8 @@ import numpy as np
 # MSE (L2)
 # MAE (L1)
 # Huber (tested with reduction = 'mean', delta = 0.75)
+
+# TODO: make sure all the params are commented
     
 class RiemannianLoss(nn.Module):
     def __init__(self, gamma):
