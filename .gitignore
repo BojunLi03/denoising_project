@@ -1,0 +1,5 @@
+# Ignore all .h5 data files
+*.h5
+
+# Ignore __pycache__
+__pycache__/*
