@@ -30,6 +30,33 @@ class RiemannianLoss(nn.Module):
         
         return loss
     
+# new version that raises exceptions for bad values of gamma
+class RiemannianV1(nn.Module):
+    def __init__(self, gamma):
+        super(RiemannianLoss, self).__init__()
+        self.gamma = gamma
+    
+    def forward(self, input, target):
+        # Ensure inputs are non-zero to avoid NaN in logarithms
+        eps = torch.finfo(input.dtype).eps  # small epsilon to avoid division by zero
+        input = torch.clamp(input, min=eps)
+        target = torch.clamp(target, min=eps)
+        
+        # Calculate the absolute differences in logarithms
+        abs_log_diff = torch.abs(torch.log(torch.abs(target)) - torch.log(torch.abs(input)))
+        
+        # Compute the inverse of the absolute differences
+        inverse_abs_log_diff = torch.where(abs_log_diff > eps, 1.0 / abs_log_diff, torch.tensor(float('inf')).to(input.device))
+        
+        # Check if gamma is less than or equal to all elements of the inverse_abs_log_diff
+        if (self.gamma > inverse_abs_log_diff).any():
+            raise ValueError("The gamma parameter must be <= 1/|log|xi| - log|yi|| for all elements in input and target.")
+
+        # Compute the loss function
+        loss = torch.mean(torch.exp(self.gamma * abs_log_diff))
+        
+        return loss
+    
 # sigma (called alpha in the original paper) was set to 0.7 in the paper  
 class EdgeLoss(nn.Module):
     def __init__(self, sigma, dilate=False, kernel_size=2, low_threshold=75, high_threshold=150):
