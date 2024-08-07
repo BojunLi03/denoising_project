@@ -57,11 +57,11 @@ class RiemannianV1(nn.Module):
         
         return loss
     
-# sigma (called alpha in the original paper) was set to 0.7 in the paper  
+# alpha was set to 0.7 in the paper  
 class EdgeLoss(nn.Module):
-    def __init__(self, sigma, dilate=False, kernel_size=2, low_threshold=75, high_threshold=150):
+    def __init__(self, alpha, dilate=False, kernel_size=2, low_threshold=75, high_threshold=150):
         super(EdgeLoss, self).__init__()
-        self.sigma = sigma
+        self.alpha = alpha
         self.dilate = dilate
         self.kernel_size = kernel_size
         self.low_threshold = low_threshold
@@ -112,7 +112,7 @@ class EdgeLoss(nn.Module):
 
         loss_edges = (torch.sum(edge_maps * diff_img))/num_edge_pixels
         loss_pixels = (torch.sum(diff_img))/num_total_pixels
-        loss_total = (self.sigma)*loss_pixels + (1-self.sigma)*loss_edges
+        loss_total = (self.alpha)*loss_pixels + (1-self.alpha)*loss_edges
         
         return loss_total
 
