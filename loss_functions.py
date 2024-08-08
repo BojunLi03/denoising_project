@@ -5,12 +5,19 @@ import cv2
 import numpy as np
 
 # Pytorch-implemented functions:
+
 # MSE/L2 ( torch.nn.MSELoss() )
+
 # MAE/L1 ( torch.nn.L1Loss() )
-# Huber (tested with reduction = 'mean', delta = 0.75) ( torch.nn.HuberLoss(reduction='', delta=) )
+
+# Huber ( torch.nn.HuberLoss(reduction='', delta=) ),
+# tested with reduction = 'mean', delta = 0.75
 
 # TODO: make sure all the params are commented
-    
+
+
+# A novel loss function, inspired by Riemannian metrics.
+# gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
 class RiemannianLoss(nn.Module):
     def __init__(self, gamma):
         super(RiemannianLoss, self).__init__()
@@ -19,6 +26,7 @@ class RiemannianLoss(nn.Module):
     def forward(self, input, target):
         # Ensure inputs are non-zero to avoid NaN in logarithms
         eps = torch.finfo(input.dtype).eps  # small epsilon to avoid division by zero
+
         input = torch.clamp(input, min=eps)
         target = torch.clamp(target, min=eps)
         
@@ -30,7 +38,10 @@ class RiemannianLoss(nn.Module):
         
         return loss
     
-# new version that raises exceptions for bad values of gamma
+
+
+# new version of RiemannianLoss; raises exceptions for bad values of gamma
+# TODO: rigourously test this version to see if the exception catcher works
 class RiemannianV1(nn.Module):
     def __init__(self, gamma):
         super(RiemannianLoss, self).__init__()
@@ -57,7 +68,10 @@ class RiemannianV1(nn.Module):
         
         return loss
     
-# alpha was set to 0.7 in the paper  
+
+
+# A loss function that takes advantage of edge maps to rectify MSE's downsides
+# The alpha parameter was empirically set to 0.7 in the original paper  
 class EdgeLoss(nn.Module):
     def __init__(self, alpha, dilate=False, kernel_size=2, low_threshold=75, high_threshold=150):
         super(EdgeLoss, self).__init__()
@@ -67,6 +81,7 @@ class EdgeLoss(nn.Module):
         self.low_threshold = low_threshold
         self.high_threshold = high_threshold
     
+    # Generate the edge map
     def edgemap(self, image_tensor):
 
         if image_tensor.dim() > 3:
@@ -99,8 +114,9 @@ class EdgeLoss(nn.Module):
         edge_maps = []
         
         batch_size = target.size(0)
+
+        # Generate edge maps for all of the targets
         for i in range(batch_size):
-            
             edge_map = self.edgemap(target[i])            
             edge_maps.append(edge_map)
                    
@@ -110,6 +126,7 @@ class EdgeLoss(nn.Module):
         num_total_pixels = H * W
         diff_img = torch.abs(input - target)
 
+        # Calculate the loss across both pixels and edges, then combine
         loss_edges = (torch.sum(edge_maps * diff_img))/num_edge_pixels
         loss_pixels = (torch.sum(diff_img))/num_total_pixels
         loss_total = (self.alpha)*loss_pixels + (1-self.alpha)*loss_edges
@@ -117,6 +134,8 @@ class EdgeLoss(nn.Module):
         return loss_total
 
 
+
+# A loss function that uses the Charbonnier distance; an L1 loss variant
 class Charbonnier_Loss:
     """
     Charbonnier Loss (L1)
@@ -132,7 +151,7 @@ class Charbonnier_Loss:
 
     def __call__(self, outputs, targets, weights=None):
 
-        B, C, T, H = targets.shape#, W = targets.shape
+        B, C, T, H = targets.shape
         if(self.complex_i):
             assert C==2, f"Complex type requires image to have C=2, given C={C}"
             diff_L1_real = torch.abs(outputs[:,0]-targets[:,0])
@@ -157,11 +176,18 @@ class Charbonnier_Loss:
 
         return v_l1 / loss.numel()
  
+# 80 character limit here: --------------------------------------------------  |
 
+
+# A generalization of many different loss functions, with customizeable params.
+# alpha is a shape parameter that controls robustness
+# c > 0 is a scale parameter that controls the size of the loss's quadratic bowl
 class GeneralizedLoss(nn.Module):
     def __init__(self, alpha, c):
         super(GeneralizedLoss, self).__init__()
         self.alpha = alpha
+        if c <= 0:
+            raise ValueError("c must be greater than 0.")
         self.c = c
 
     def forward(self, outputs, targets):
