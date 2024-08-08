@@ -176,7 +176,6 @@ class Charbonnier_Loss:
 
         return v_l1 / loss.numel()
  
-# 80 character limit here: --------------------------------------------------  |
 
 
 # A generalization of many different loss functions, with customizeable params.
@@ -192,17 +191,26 @@ class GeneralizedLoss(nn.Module):
 
     def forward(self, outputs, targets):
         x = torch.abs(outputs - targets)
+
+        # If alpha = 2, it approaches L2
         if self.alpha == 2:
             return torch.mean(0.5*((x/(self.c))**2))
+        
+        # Special case for alpha = 0 
         elif self.alpha == 0:
             return torch.mean(torch.log10(0.5*((x/(self.c))**2) + 1))
+        
+        # Special case for alpha = -infinity
         elif self.alpha < 0 and np.isinf(self.alpha):
             return torch.mean(1-(np.exp(-0.5*((x/(self.c))**2))))
+        
         else:    
             term1 = max(self.alpha - 2.0, 2.0 - self.alpha) / self.alpha  # Ensure alpha - 2.0 is a float
             term2 = ((x / self.c)**2 / abs(self.alpha - 2) + 1)**(self.alpha / 2) - 1
             loss = term1 * term2
             return loss.mean()
+
+
 
 
 class PSNR(nn.Module):
