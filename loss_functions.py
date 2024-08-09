@@ -212,7 +212,7 @@ class GeneralizedLoss(nn.Module):
 
 
 
-
+# A loss function that uses the Peak Signal-to-Noise Ratio metric
 class PSNR(nn.Module):
     """
     PSNR as a comparison metric
@@ -232,4 +232,3 @@ class PSNR(nn.Module):
         den = torch.mean(torch.square(targets - outputs)) + torch.finfo(torch.float32).eps
 
         return -1 * 10 * torch.log10(num/den)
-    
