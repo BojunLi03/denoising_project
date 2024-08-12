@@ -44,7 +44,9 @@ class RiemannianLoss(nn.Module):
 # TODO: rigourously test this version to see if the exception catcher works
 class RiemannianV1(nn.Module):
     def __init__(self, gamma):
-        super(RiemannianLoss, self).__init__()
+        super(RiemannianV1, self).__init__()
+
+        # gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
         self.gamma = gamma
     
     def forward(self, input, target):
