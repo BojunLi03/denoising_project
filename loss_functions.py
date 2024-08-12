@@ -21,15 +21,15 @@ class RiemannianLoss(nn.Module):
         super(RiemannianLoss, self).__init__()
         self.gamma = gamma
     
-    def forward(self, input, target):
+    def forward(self, inputs, targets):
         # Ensure inputs are non-zero to avoid NaN in logarithms
-        eps = torch.finfo(input.dtype).eps  # small epsilon to avoid division by zero
+        eps = torch.finfo(inputs.dtype).eps  # small epsilon to avoid division by zero
 
-        input = torch.clamp(input, min=eps)
-        target = torch.clamp(target, min=eps)
+        inputs = torch.clamp(inputs, min=eps)
+        targets = torch.clamp(targets, min=eps)
         
         # Calculate the absolute differences in logarithms
-        abs_log_diff = torch.abs(torch.log(torch.abs(target)) - torch.log(torch.abs(input)))
+        abs_log_diff = torch.abs(torch.log(torch.abs(targets)) - torch.log(torch.abs(inputs)))
         
         # Compute the loss function
         loss = torch.mean(torch.exp(self.gamma * abs_log_diff))
@@ -48,17 +48,17 @@ class RiemannianV1(nn.Module):
         # gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
         self.gamma = gamma
     
-    def forward(self, input, target):
+    def forward(self, inputs, targets):
         # Ensure inputs are non-zero to avoid NaN in logarithms
-        eps = torch.finfo(input.dtype).eps  # small epsilon to avoid division by zero
-        input = torch.clamp(input, min=eps)
-        target = torch.clamp(target, min=eps)
+        eps = torch.finfo(inputs.dtype).eps  # small epsilon to avoid division by zero
+        inputs = torch.clamp(inputs, min=eps)
+        target = torch.clamp(targets, min=eps)
         
         # Calculate the absolute differences in logarithms
-        abs_log_diff = torch.abs(torch.log(torch.abs(target)) - torch.log(torch.abs(input)))
+        abs_log_diff = torch.abs(torch.log(torch.abs(targets)) - torch.log(torch.abs(inputs)))
         
         # Compute the inverse of the absolute differences
-        inverse_abs_log_diff = torch.where(abs_log_diff > eps, 1.0 / abs_log_diff, torch.tensor(float('inf')).to(input.device))
+        inverse_abs_log_diff = torch.where(abs_log_diff > eps, 1.0 / abs_log_diff, torch.tensor(float('inf')).to(inputs.device))
         
         # Check if gamma is less than or equal to all elements of the inverse_abs_log_diff
         if (self.gamma > inverse_abs_log_diff).any():
