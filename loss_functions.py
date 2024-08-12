@@ -13,8 +13,6 @@ import numpy as np
 # Huber ( torch.nn.HuberLoss(reduction='', delta=) ),
 # tested with reduction = 'mean', delta = 0.75
 
-# TODO: make sure all the params are commented
-
 
 # A novel loss function, inspired by Riemannian metrics.
 # gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
@@ -42,6 +40,7 @@ class RiemannianLoss(nn.Module):
 
 # new version of RiemannianLoss; raises exceptions for bad values of gamma
 # TODO: rigourously test this version to see if the exception catcher works
+# TODO: add the self.checkrange
 class RiemannianV1(nn.Module):
     def __init__(self, gamma):
         super(RiemannianV1, self).__init__()
@@ -72,10 +71,20 @@ class RiemannianV1(nn.Module):
     
 
 
-# A loss function that takes advantage of edge maps to rectify MSE's downsides
-# The alpha parameter was empirically set to 0.7 in the original paper  
 class EdgeLoss(nn.Module):
+    """
+    Edge Loss
+    A loss function that takes advantage of edge maps to rectify MSE's downsides
+    """
     def __init__(self, alpha, dilate=False, kernel_size=2, low_threshold=75, high_threshold=150):
+        """
+        @args:
+            - alpha (int): a parameter to control the weighting of each loss component (empirically set to 0.7 in the paper)
+            - dilate (bool): whether to apply a dilation operation
+            - kernel_size (int): the size of the kernel for the dilation
+            - low_threshold (int): lower cutoff for edge linking
+            - high_threshold (int): upper cuttoff for edge linking
+        """
         super(EdgeLoss, self).__init__()
         self.alpha = alpha
         self.dilate = dilate
@@ -85,7 +94,12 @@ class EdgeLoss(nn.Module):
     
     # Generate the edge map
     def edgemap(self, image_tensor):
-
+        """
+        @args
+            - image_tensor (Tensor): a tensor representing the image
+        @returns:
+            - edges_tensor (Tensor): a tensor representing the image's edgemap
+        """
         if image_tensor.dim() > 3:
             image_tensor = image_tensor.squeeze(0)
 
@@ -109,24 +123,31 @@ class EdgeLoss(nn.Module):
         
         return edges_tensor
     
-    def forward(self, input, target):
-        H = target.size(2)
-        W = target.size(3)
+    def forward(self, inputs, targets):
+        """
+        @args:
+            - inputs (Tensor): the batch of predicted images
+            - targets (Tensor): the batch of ground truth images
+        @returns:
+            - loss_total (FloatTensor): the value of the loss function
+        """
+        H = targets.size(2)
+        W = targets.size(3)
         
         edge_maps = []
         
-        batch_size = target.size(0)
+        batch_size = targets.size(0)
 
         # Generate edge maps for all of the targets
         for i in range(batch_size):
-            edge_map = self.edgemap(target[i])            
+            edge_map = self.edgemap(targets[i])            
             edge_maps.append(edge_map)
                    
         edge_maps = torch.stack(edge_maps, dim=0).cuda()
 
         num_edge_pixels = torch.sum(edge_maps).item()
         num_total_pixels = H * W
-        diff_img = torch.abs(input - target)
+        diff_img = torch.abs(inputs - targets)
 
         # Calculate the loss across both pixels and edges, then combine
         loss_edges = (torch.sum(edge_maps * diff_img))/num_edge_pixels
@@ -152,6 +173,12 @@ class Charbonnier_Loss:
         self.eps = eps
 
     def __call__(self, outputs, targets, weights=None):
+        """
+        @args:
+
+        @returns:
+            - loss (FloatTensor): value of the loss function
+        """
 
         B, C, T, H = targets.shape
         if(self.complex_i):
