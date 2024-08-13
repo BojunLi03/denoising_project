@@ -13,9 +13,6 @@ import numpy as np
 # Huber ( torch.nn.HuberLoss(reduction='', delta=) ),
 # tested with reduction = 'mean', delta = 0.75
 
-
-# A novel loss function, inspired by Riemannian metrics.
-# gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
 class RiemannianLoss(nn.Module):
     """
     Riemannian Loss
@@ -54,8 +51,6 @@ class RiemannianLoss(nn.Module):
         return loss
     
 
-
-# new version of RiemannianLoss; raises exceptions for bad values of gamma
 # TODO: rigourously test this version to see if the exception catcher works
 # TODO: add the self.checkrange
 class RiemannianV1(nn.Module):
@@ -100,7 +95,6 @@ class RiemannianV1(nn.Module):
         
         return loss
     
-
 
 class EdgeLoss(nn.Module):
     """
@@ -188,7 +182,6 @@ class EdgeLoss(nn.Module):
         return loss_total
 
 
-
 class Charbonnier_Loss:
     """
     Charbonnier Loss (L1)
@@ -211,7 +204,7 @@ class Charbonnier_Loss:
             - v_l1 / loss.numel() (FloatTensor): value of the loss function
         """
 
-        B, C, T, H = targets.shape
+        B, C, T = targets.shape
         if(self.complex_i):
             assert C==2, f"Complex type requires image to have C=2, given C={C}"
             diff_L1_real = torch.abs(outputs[:,0]-targets[:,0])
@@ -236,7 +229,6 @@ class Charbonnier_Loss:
 
         return v_l1 / loss.numel()
  
-
 
 class GeneralizedLoss(nn.Module):
     """
@@ -282,7 +274,6 @@ class GeneralizedLoss(nn.Module):
             term2 = ((x / self.c)**2 / abs(self.alpha - 2) + 1)**(self.alpha / 2) - 1
             loss = term1 * term2
             return loss.mean()
-
 
 
 class PSNR(nn.Module):
