@@ -208,7 +208,7 @@ class Charbonnier_Loss:
         @args:
 
         @returns:
-            - loss (FloatTensor): value of the loss function
+            - v_l1 / loss.numel() (FloatTensor): value of the loss function
         """
 
         B, C, T, H = targets.shape
@@ -239,6 +239,10 @@ class Charbonnier_Loss:
 
 
 class GeneralizedLoss(nn.Module):
+    """
+    Generalized Loss
+    A loss function that generalizes several different loss functions.
+    """
     def __init__(self, alpha, c):
         """
         @args:
