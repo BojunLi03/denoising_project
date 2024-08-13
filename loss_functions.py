@@ -17,11 +17,28 @@ import numpy as np
 # A novel loss function, inspired by Riemannian metrics.
 # gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
 class RiemannianLoss(nn.Module):
+    """
+    Riemannian Loss
+    A novel loss function, inspired by Riemannian metrics (hence the name).
+    The gamma parameter must be <= 1/|log|xi| - log|yi||.
+    """
     def __init__(self, gamma):
+        """
+        @args:
+            - gamma (int): must be <= 1/|log|xi| - log|yi||
+        """
         super(RiemannianLoss, self).__init__()
         self.gamma = gamma
     
     def forward(self, inputs, targets):
+        """
+        @args:
+            - inputs (Tensor): the batch of predicted images
+            - targets (Tensor): the batch of ground truth images
+        @returns:
+            - loss (FloatTensor): the value of the loss function
+        """
+
         # Ensure inputs are non-zero to avoid NaN in logarithms
         eps = torch.finfo(inputs.dtype).eps  # small epsilon to avoid division by zero
 
@@ -42,17 +59,31 @@ class RiemannianLoss(nn.Module):
 # TODO: rigourously test this version to see if the exception catcher works
 # TODO: add the self.checkrange
 class RiemannianV1(nn.Module):
+    """
+    Riemannian Loss (v1)
+    Another version of the Riemannian loss. Implements error raising for bad gamma values.
+    """
     def __init__(self, gamma):
+        """
+        @args:
+            - gamma (int): must be <= 1/|log|xi| - log|yi||
+        """
         super(RiemannianV1, self).__init__()
-
-        # gamma must be <= 1/|log|xi| - log|yi|| for all elements in input and target
         self.gamma = gamma
     
     def forward(self, inputs, targets):
+        """
+        @args:
+            - inputs (Tensor): the batch of predicted images
+            - targets (Tensor): the batch of ground truth images
+        @returns:
+            - loss (FloatTensor): the value of the loss function
+        """
+
         # Ensure inputs are non-zero to avoid NaN in logarithms
         eps = torch.finfo(inputs.dtype).eps  # small epsilon to avoid division by zero
         inputs = torch.clamp(inputs, min=eps)
-        target = torch.clamp(targets, min=eps)
+        targets = torch.clamp(targets, min=eps)
         
         # Calculate the absolute differences in logarithms
         abs_log_diff = torch.abs(torch.log(torch.abs(targets)) - torch.log(torch.abs(inputs)))
@@ -62,7 +93,7 @@ class RiemannianV1(nn.Module):
         
         # Check if gamma is less than or equal to all elements of the inverse_abs_log_diff
         if (self.gamma > inverse_abs_log_diff).any():
-            raise ValueError("The gamma parameter must be <= 1/|log|xi| - log|yi|| for all elements in input and target.")
+            raise ValueError("The gamma parameter must be <= 1/|log|xi| - log|yi||.")
 
         # Compute the loss function
         loss = torch.mean(torch.exp(self.gamma * abs_log_diff))
@@ -158,10 +189,10 @@ class EdgeLoss(nn.Module):
 
 
 
-# A loss function that uses the Charbonnier distance; an L1 loss variant
 class Charbonnier_Loss:
     """
     Charbonnier Loss (L1)
+    A loss function that uses the Charbonnier distance; an L1 loss variant
     """
     def __init__(self, complex_i=False, eps=1e-3):
         """
@@ -207,11 +238,13 @@ class Charbonnier_Loss:
  
 
 
-# A generalization of many different loss functions, with customizeable params.
-# alpha is a shape parameter that controls robustness
-# c > 0 is a scale parameter that controls the size of the loss's quadratic bowl
 class GeneralizedLoss(nn.Module):
     def __init__(self, alpha, c):
+        """
+        @args:
+            - alpha (int): shape parameter that controls robustness
+            - c > 0 (int): scale parameter that controls the loss's quadratic bowl size
+        """
         super(GeneralizedLoss, self).__init__()
         self.alpha = alpha
         if c <= 0:
@@ -219,6 +252,13 @@ class GeneralizedLoss(nn.Module):
         self.c = c
 
     def forward(self, outputs, targets):
+        """
+        @args:
+            - outputs (Tensor): the batch of predicted images
+            - targets (Tensor): the batch of ground truth images
+        @returns:
+            - loss (FloatTensor): the value of the loss function
+        """
         x = torch.abs(outputs - targets)
 
         # If alpha = 2, it approaches L2
@@ -241,7 +281,6 @@ class GeneralizedLoss(nn.Module):
 
 
 
-# A loss function that uses the Peak Signal-to-Noise Ratio metric
 class PSNR(nn.Module):
     """
     PSNR as a comparison metric
