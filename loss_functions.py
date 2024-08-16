@@ -51,8 +51,8 @@ class RiemannianLoss(nn.Module):
         return loss
     
 
-# TODO: rigourously test this version to see if the exception catcher works
-# TODO: add the self.checkrange
+# TODO: rigourously test this version to see if the gamma checking exception catcher works
+# TODO: if above is achieved, optimize the checker, so it's executed less often
 class RiemannianV1(nn.Module):
     """
     Riemannian Loss (v1)
